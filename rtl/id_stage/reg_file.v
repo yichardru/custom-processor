@@ -34,7 +34,9 @@ module reg_file (
     reg [31:0] regs[0:31];
 
     integer i;
-    always @(posedge clk or posedge reset) begin
+    // Write on negedge (first half of cycle) so ID can read updated values
+    // in the second half, supporting WB-to-ID forwarding through the register file
+    always @(negedge clk or posedge reset) begin
         if (reset) begin
             for (i = 0; i < 32; i = i + 1)
                 regs[i] <= 32'b0;
