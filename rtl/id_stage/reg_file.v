@@ -43,8 +43,12 @@ module reg_file (
         end
     end
 
-    // Combinational reads
-    assign rd1 = (rs1 == 5'd0) ? 32'b0 : regs[rs1];
-    assign rd2 = (rs2 == 5'd0) ? 32'b0 : regs[rs2];
+    // Combinational reads with write-before-read bypass.
+    // If WB is writing to the same address being read in the same cycle,
+    // forward the new write data so ID sees the up-to-date value.
+    assign rd1 = (rs1 == 5'd0) ? 32'b0 :
+                 (we && rd == rs1) ? wd : regs[rs1];
+    assign rd2 = (rs2 == 5'd0) ? 32'b0 :
+                 (we && rd == rs2) ? wd : regs[rs2];
 
 endmodule
