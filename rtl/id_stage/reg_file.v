@@ -34,9 +34,8 @@ module reg_file (
     reg [31:0] regs[0:31];
 
     integer i;
-    // Write on negedge (first half of cycle) so ID can read updated values
-    // in the second half, supporting WB-to-ID forwarding through the register file
-    always @(negedge clk or posedge reset) begin
+    // Standard posedge write.
+    always @(posedge clk or posedge reset) begin
         if (reset) begin
             for (i = 0; i < 32; i = i + 1)
                 regs[i] <= 32'b0;
@@ -45,8 +44,14 @@ module reg_file (
         end
     end
 
-    // Combinational reads
-    assign rd1 = (rs1 == 5'd0) ? 32'b0 : regs[rs1];
-    assign rd2 = (rs2 == 5'd0) ? 32'b0 : regs[rs2];
+    // Write-first bypass: if WB is writing the same register ID is reading
+    // this cycle, forward wd directly instead of the stale array value.
+    // This is what lets ID observe a same-cycle WB write (RAW hazards more
+    // than two instructions apart resolve through this path rather than
+    // the EX-stage forwarding muxes).
+    assign rd1 = (rs1 == 5'd0) ? 32'b0 :
+                 (we && rd == rs1) ? wd : regs[rs1];
+    assign rd2 = (rs2 == 5'd0) ? 32'b0 :
+                 (we && rd == rs2) ? wd : regs[rs2];
 
 endmodule

@@ -26,8 +26,14 @@ module instr_memory (
 );
 
 reg [31:0] memory [0:255]; // 256 words or 1KB dummy memory
+integer i;
 
 initial begin
+    // Default every word to NOP first so fetches past the end of the
+    // loaded program decode safely instead of going X and poisoning
+    // the hazard/PC logic downstream.
+    for (i = 0; i < 256; i = i + 1)
+        memory[i] = 32'h00000013; // NOP: ADDI x0, x0, 0
     $display("Loading program.mem ...");
     $readmemh("program.mem", memory);
 end
